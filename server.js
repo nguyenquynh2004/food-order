@@ -1,22 +1,27 @@
 const express = require("express");
-const mysql = require("mysql");
+const mysql = require("mysql2");
 const cors = require("cors");
 const path = require("path");
 
 const app = express();
 
+// =========================
+// MIDDLEWARE
+// =========================
+
 app.use(cors());
 app.use(express.json());
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+    "/uploads",
+    express.static(path.join(__dirname, "uploads"))
+);
 
 // =========================
-// MYSQL POOL CONNECTION
+// MYSQL CONNECTION
 // =========================
 
 const db = mysql.createPool({
-
-    connectionLimit: 10,
 
     host: process.env.DB_HOST,
 
@@ -26,7 +31,13 @@ const db = mysql.createPool({
 
     database: process.env.DB_NAME,
 
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT,
+
+    waitForConnections: true,
+
+    connectionLimit: 10,
+
+    queueLimit: 0
 
 });
 
@@ -36,12 +47,12 @@ db.getConnection((err, connection) => {
 
     if (err) {
 
-        console.log("Kết nối MySQL thất bại");
+        console.log("❌ Kết nối MySQL thất bại");
         console.log(err);
 
     } else {
 
-        console.log("Kết nối MySQL thành công");
+        console.log("✅ Kết nối MySQL thành công");
 
         connection.release();
 
@@ -55,7 +66,7 @@ db.getConnection((err, connection) => {
 
 app.get("/", (req, res) => {
 
-    res.send("Server running...");
+    res.send("🚀 Server running...");
 
 });
 
@@ -70,6 +81,8 @@ app.get("/foods", (req, res) => {
     db.query(sql, (err, result) => {
 
         if (err) {
+
+            console.log(err);
 
             res.send(err);
 
@@ -124,6 +137,8 @@ app.post("/foods", (req, res) => {
 
             if (err) {
 
+                console.log(err);
+
                 res.send(err);
 
             } else {
@@ -131,7 +146,7 @@ app.post("/foods", (req, res) => {
                 res.send({
 
                     success: true,
-                    message: "Thêm món ăn thành công"
+                    message: "✅ Thêm món ăn thành công"
 
                 });
 
@@ -193,6 +208,8 @@ app.put("/foods/:id", (req, res) => {
 
             if (err) {
 
+                console.log(err);
+
                 res.send(err);
 
             } else {
@@ -200,7 +217,7 @@ app.put("/foods/:id", (req, res) => {
                 res.send({
 
                     success: true,
-                    message: "Cập nhật món ăn thành công"
+                    message: "✅ Cập nhật món ăn thành công"
 
                 });
 
@@ -226,6 +243,8 @@ app.delete("/foods/:id", (req, res) => {
 
         if (err) {
 
+            console.log(err);
+
             res.send(err);
 
         } else {
@@ -233,7 +252,7 @@ app.delete("/foods/:id", (req, res) => {
             res.send({
 
                 success: true,
-                message: "Xóa món ăn thành công"
+                message: "✅ Xóa món ăn thành công"
 
             });
 
@@ -280,6 +299,8 @@ app.post("/login", (req, res) => {
 
             if (err) {
 
+                console.log(err);
+
                 res.send(err);
 
             } else {
@@ -289,7 +310,7 @@ app.post("/login", (req, res) => {
                     res.send({
 
                         success: true,
-                        message: "Đăng nhập thành công"
+                        message: "✅ Đăng nhập thành công"
 
                     });
 
@@ -298,7 +319,7 @@ app.post("/login", (req, res) => {
                     res.send({
 
                         success: false,
-                        message: "Sai tài khoản hoặc mật khẩu"
+                        message: "❌ Sai tài khoản hoặc mật khẩu"
 
                     });
 
@@ -349,6 +370,8 @@ app.post("/orders", (req, res) => {
 
             if (err) {
 
+                console.log(err);
+
                 res.send(err);
 
             } else {
@@ -356,7 +379,7 @@ app.post("/orders", (req, res) => {
                 res.send({
 
                     success: true,
-                    message: "Đặt hàng thành công"
+                    message: "✅ Đặt hàng thành công"
 
                 });
 
@@ -380,6 +403,8 @@ app.get("/orders", (req, res) => {
 
         if (err) {
 
+            console.log(err);
+
             res.send(err);
 
         } else {
@@ -400,6 +425,6 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-    console.log(`Server started at port ${PORT}`);
+    console.log(`🚀 Server started at port ${PORT}`);
 
 });
