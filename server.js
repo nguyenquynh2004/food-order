@@ -1,7 +1,6 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
-const multer = require("multer");
 const path = require("path");
 
 const app = express();
@@ -9,96 +8,133 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// CHO PHÉP TRUY CẬP ẢNH
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// KẾT NỐI MYSQL
-const db = mysql.createConnection({
+// =========================
+// MYSQL POOL CONNECTION
+// =========================
 
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "food_order"
+const db = mysql.createPool({
+
+    connectionLimit: 10,
+
+    host: process.env.DB_HOST,
+
+    user: process.env.DB_USER,
+
+    password: process.env.DB_PASSWORD,
+
+    database: process.env.DB_NAME,
+
+    port: process.env.DB_PORT
 
 });
 
-db.connect((err) => {
+// TEST MYSQL CONNECTION
 
-    if(err){
-        console.log("Kết nối thất bại");
-    }else{
+db.getConnection((err, connection) => {
+
+    if (err) {
+
+        console.log("Kết nối MySQL thất bại");
+        console.log(err);
+
+    } else {
+
         console.log("Kết nối MySQL thành công");
-    }
 
-});
-
-// CẤU HÌNH UPLOAD ẢNH
-const storage = multer.diskStorage({
-
-    destination: function(req, file, cb){
-
-        cb(null, "uploads/");
-
-    },
-
-    filename: function(req, file, cb){
-
-        cb(
-            null,
-            Date.now() + path.extname(file.originalname)
-        );
+        connection.release();
 
     }
 
 });
 
-const upload = multer({ storage: storage });
+// =========================
+// ROOT
+// =========================
 
-// TEST SERVER
 app.get("/", (req, res) => {
 
     res.send("Server running...");
 
 });
 
-// LẤY DANH SÁCH MÓN ĂN
+// =========================
+// GET ALL FOODS
+// =========================
+
 app.get("/foods", (req, res) => {
 
     const sql = "SELECT * FROM foods";
 
     db.query(sql, (err, result) => {
 
-        if(err){
+        if (err) {
+
             res.send(err);
-        }else{
+
+        } else {
+
             res.send(result);
+
         }
 
     });
 
 });
 
-// THÊM MÓN ĂN
+// =========================
+// ADD FOOD
+// =========================
+
 app.post("/foods", (req, res) => {
 
-    const { name, price, image, description } = req.body;
+    const {
+
+        name,
+        price,
+        image,
+        description
+
+    } = req.body;
 
     const sql = `
-        INSERT INTO foods(name, price, image, description)
+
+        INSERT INTO foods
+        (name, price, image, description)
+
         VALUES (?, ?, ?, ?)
+
     `;
 
     db.query(
 
         sql,
-        [name, price, image, description],
+
+        [
+
+            name,
+            price,
+            image,
+            description
+
+        ],
 
         (err, result) => {
 
-            if(err){
+            if (err) {
+
                 res.send(err);
-            }else{
-                res.send("Thêm món ăn thành công");
+
+            } else {
+
+                res.send({
+
+                    success: true,
+                    message: "Thêm món ăn thành công"
+
+                });
+
             }
 
         }
@@ -107,7 +143,79 @@ app.post("/foods", (req, res) => {
 
 });
 
-// XÓA MÓN ĂN
+// =========================
+// UPDATE FOOD
+// =========================
+
+app.put("/foods/:id", (req, res) => {
+
+    const id = req.params.id;
+
+    const {
+
+        name,
+        price,
+        image,
+        description
+
+    } = req.body;
+
+    const sql = `
+
+        UPDATE foods
+
+        SET
+
+            name = ?,
+            price = ?,
+            image = ?,
+            description = ?
+
+        WHERE id = ?
+
+    `;
+
+    db.query(
+
+        sql,
+
+        [
+
+            name,
+            price,
+            image,
+            description,
+            id
+
+        ],
+
+        (err, result) => {
+
+            if (err) {
+
+                res.send(err);
+
+            } else {
+
+                res.send({
+
+                    success: true,
+                    message: "Cập nhật món ăn thành công"
+
+                });
+
+            }
+
+        }
+
+    );
+
+});
+
+// =========================
+// DELETE FOOD
+// =========================
+
 app.delete("/foods/:id", (req, res) => {
 
     const id = req.params.id;
@@ -116,107 +224,42 @@ app.delete("/foods/:id", (req, res) => {
 
     db.query(sql, [id], (err, result) => {
 
-        if(err){
+        if (err) {
+
             res.send(err);
-        }else{
-            res.send("Xóa món ăn thành công");
+
+        } else {
+
+            res.send({
+
+                success: true,
+                message: "Xóa món ăn thành công"
+
+            });
+
         }
 
     });
 
 });
 
-// UPDATE MÓN ĂN
-app.put("/foods/:id", (req, res) => {
-
-    const id = req.params.id;
-
-    const { name, price, image, description } = req.body;
-
-    const sql = `
-        UPDATE foods
-        SET name = ?, price = ?, image = ?, description = ?
-        WHERE id = ?
-    `;
-
-    db.query(
-
-        sql,
-        [name, price, image, description, id],
-
-        (err, result) => {
-
-            if(err){
-                res.send(err);
-            }else{
-                res.send("Cập nhật món ăn thành công");
-            }
-
-        }
-
-    );
-
-});
-
-// UPLOAD ẢNH
-app.post("/upload", upload.single("image"), (req, res) => {
-
-    if(!req.file){
-
-        return res.send("Không có file");
-
-    }
-
-    res.send({
-
-        imageUrl:
-        `http://localhost:3000/uploads/${req.file.filename}`
-
-    });
-
-});
-// API ĐẶT HÀNG
-app.post("/orders", (req, res) => {
-
-    const { customer_name, total_price } = req.body;
-
-    const sql = `
-    
-        INSERT INTO orders(customer_name, total_price)
-        VALUES (?, ?)
-
-    `;
-
-    db.query(
-
-        sql,
-        [customer_name, total_price],
-
-        (err, result) => {
-
-            if(err){
-
-                res.send(err);
-
-            }else{
-
-                res.send("Đặt hàng thành công");
-
-            }
-
-        }
-
-    );
-
-});
+// =========================
 // LOGIN ADMIN
+// =========================
+
 app.post("/login", (req, res) => {
 
-    const { username, password } = req.body;
+    const {
+
+        username,
+        password
+
+    } = req.body;
 
     const sql = `
-    
+
         SELECT * FROM users
+
         WHERE username = ?
         AND password = ?
 
@@ -225,17 +268,23 @@ app.post("/login", (req, res) => {
     db.query(
 
         sql,
-        [username, password],
+
+        [
+
+            username,
+            password
+
+        ],
 
         (err, result) => {
 
-            if(err){
+            if (err) {
 
                 res.send(err);
 
-            }else{
+            } else {
 
-                if(result.length > 0){
+                if (result.length > 0) {
 
                     res.send({
 
@@ -244,7 +293,7 @@ app.post("/login", (req, res) => {
 
                     });
 
-                }else{
+                } else {
 
                     res.send({
 
@@ -262,54 +311,95 @@ app.post("/login", (req, res) => {
     );
 
 });
-// DASHBOARD STATS
-app.get("/dashboard", (req, res) => {
 
-    const dashboard = {};
+// =========================
+// CREATE ORDER
+// =========================
 
-    // TOTAL FOODS
+app.post("/orders", (req, res) => {
+
+    const {
+
+        customer_name,
+        total_price
+
+    } = req.body;
+
+    const sql = `
+
+        INSERT INTO orders
+        (customer_name, total_price)
+
+        VALUES (?, ?)
+
+    `;
+
     db.query(
-        "SELECT COUNT(*) AS totalFoods FROM foods",
-        (err, foodsResult) => {
 
-            dashboard.totalFoods =
-            foodsResult[0].totalFoods;
+        sql,
 
-            // TOTAL ORDERS
-            db.query(
-                "SELECT COUNT(*) AS totalOrders FROM orders",
-                (err, ordersResult) => {
+        [
 
-                    dashboard.totalOrders =
-                    ordersResult[0].totalOrders;
+            customer_name,
+            total_price
 
-                    // TOTAL REVENUE
-                    db.query(
-                        `
-                            SELECT 
-                            SUM(total_price) AS totalRevenue
-                            FROM orders
-                        `,
-                        (err, revenueResult) => {
+        ],
 
-                            dashboard.totalRevenue =
-                            revenueResult[0].totalRevenue || 0;
+        (err, result) => {
 
-                            res.send(dashboard);
+            if (err) {
 
-                        }
-                    );
+                res.send(err);
 
-                }
-            );
+            } else {
+
+                res.send({
+
+                    success: true,
+                    message: "Đặt hàng thành công"
+
+                });
+
+            }
 
         }
+
     );
 
 });
-// CHẠY SERVER
-app.listen(3000, () => {
 
-    console.log("Server started");
+// =========================
+// GET ORDERS
+// =========================
+
+app.get("/orders", (req, res) => {
+
+    const sql = "SELECT * FROM orders ORDER BY id DESC";
+
+    db.query(sql, (err, result) => {
+
+        if (err) {
+
+            res.send(err);
+
+        } else {
+
+            res.send(result);
+
+        }
+
+    });
+
+});
+
+// =========================
+// SERVER
+// =========================
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+
+    console.log(`Server started at port ${PORT}`);
 
 });
