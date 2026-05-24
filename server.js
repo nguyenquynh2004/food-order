@@ -23,11 +23,35 @@ const db = mysql.createPool({
 
     database: process.env.MYSQLDATABASE,
 
-    port: process.env.MYSQLPORT
+    port: process.env.MYSQLPORT,
+
+    connectTimeout: 60000,
+
+    acquireTimeout: 60000,
+
+    timeout: 60000,
+
+    queueLimit: 0
 
 });
 
-console.log("✅ MYSQL CONNECTED");
+db.getConnection((err, connection) => {
+
+    if(err){
+
+        console.log("❌ MYSQL ERROR");
+
+        console.log(err);
+
+    }else{
+
+        console.log("✅ MYSQL CONNECTED");
+
+        connection.release();
+
+    }
+
+});
 
 /* ====================================
    ROOT
