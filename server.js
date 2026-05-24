@@ -7,11 +7,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// =========================
-// MYSQL CONNECTION
-// =========================
+// ================= MYSQL =================
 
-const db = mysql.createPool({
+const db = mysql.createConnection({
 
     host: process.env.DB_HOST,
 
@@ -21,38 +19,28 @@ const db = mysql.createPool({
 
     database: process.env.DB_NAME,
 
-    port: process.env.DB_PORT,
-
-    waitForConnections: true,
-
-    connectionLimit: 10,
-
-    queueLimit: 0
+    port: process.env.DB_PORT
 
 });
 
-// TEST MYSQL
+// TEST CONNECT
 
-db.getConnection((err, connection) => {
+db.connect((err) => {
 
     if (err) {
 
-        console.log("❌ Kết nối MySQL thất bại");
+        console.log("❌ MYSQL ERROR");
         console.log(err);
 
     } else {
 
-        console.log("✅ Kết nối MySQL thành công");
-
-        connection.release();
+        console.log("✅ MYSQL CONNECTED");
 
     }
 
 });
 
-// =========================
-// ROOT
-// =========================
+// ================= ROOT =================
 
 app.get("/", (req, res) => {
 
@@ -60,9 +48,7 @@ app.get("/", (req, res) => {
 
 });
 
-// =========================
-// GET FOODS
-// =========================
+// ================= GET FOODS =================
 
 app.get("/foods", (req, res) => {
 
@@ -84,74 +70,12 @@ app.get("/foods", (req, res) => {
 
 });
 
-// =========================
-// ADD FOOD
-// =========================
-
-app.post("/foods", (req, res) => {
-
-    const {
-
-        name,
-        price,
-        image,
-        description
-
-    } = req.body;
-
-    const sql = `
-
-        INSERT INTO foods
-        (name, price, image, description)
-
-        VALUES (?, ?, ?, ?)
-
-    `;
-
-    db.query(
-
-        sql,
-
-        [
-
-            name,
-            price,
-            image,
-            description
-
-        ],
-
-        (err, result) => {
-
-            if (err) {
-
-                res.send(err);
-
-            } else {
-
-                res.send({
-
-                    success: true,
-                    message: "✅ Thêm món ăn thành công"
-
-                });
-
-            }
-
-        }
-
-    );
-
-});
-
-// =========================
-// SERVER
-// =========================
+// ================= START =================
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-    console.log(`🚀 Server started at port ${PORT}`);
+    console.log("🚀 Server started");
 
 });
