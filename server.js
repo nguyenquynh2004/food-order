@@ -7,41 +7,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* ================= MYSQL ================= */
+/* ====================================
+   MYSQL POOL CONNECTION
+==================================== */
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
+
+    connectionLimit: 10,
 
     host: process.env.MYSQLHOST,
+
     user: process.env.MYSQLUSER,
+
     password: process.env.MYSQLPASSWORD,
+
     database: process.env.MYSQLDATABASE,
+
     port: process.env.MYSQLPORT
 
 });
 
-db.connect((err) => {
+console.log("✅ MYSQL CONNECTED");
 
-    if(err){
-
-        console.log(err);
-
-    }else{
-
-        console.log("MySQL Connected");
-
-    }
-
-});
-
-/* ================= ROOT ================= */
+/* ====================================
+   ROOT
+==================================== */
 
 app.get("/", (req, res) => {
 
-    res.send("Server running");
+    res.send("🚀 Server running");
 
 });
 
-/* ================= LOGIN ================= */
+/* ====================================
+   LOGIN ADMIN
+==================================== */
 
 app.post("/login", (req, res) => {
 
@@ -76,6 +76,8 @@ app.post("/login", (req, res) => {
 
             if(err){
 
+                console.log(err);
+
                 res.send(err);
 
             }else{
@@ -108,15 +110,24 @@ app.post("/login", (req, res) => {
 
 });
 
-/* ================= GET FOODS ================= */
+/* ====================================
+   GET FOODS
+==================================== */
 
 app.get("/foods", (req, res) => {
 
-    const sql = "SELECT * FROM foods";
+    const sql = `
+    
+        SELECT * FROM foods
+        ORDER BY id DESC
+
+    `;
 
     db.query(sql, (err, result) => {
 
         if(err){
+
+            console.log(err);
 
             res.send(err);
 
@@ -130,7 +141,9 @@ app.get("/foods", (req, res) => {
 
 });
 
-/* ================= ADD FOOD ================= */
+/* ====================================
+   ADD FOOD
+==================================== */
 
 app.post("/foods", (req, res) => {
 
@@ -169,6 +182,8 @@ app.post("/foods", (req, res) => {
 
             if(err){
 
+                console.log(err);
+
                 res.send(err);
 
             }else{
@@ -188,12 +203,103 @@ app.post("/foods", (req, res) => {
 
 });
 
-/* ================= SERVER ================= */
+/* ====================================
+   CREATE ORDER
+==================================== */
+
+app.post("/orders", (req, res) => {
+
+    const {
+
+        customer,
+        total
+
+    } = req.body;
+
+    const sql = `
+    
+        INSERT INTO orders
+        (customer, total)
+
+        VALUES (?, ?)
+
+    `;
+
+    db.query(
+
+        sql,
+
+        [
+
+            customer,
+            total
+
+        ],
+
+        (err, result) => {
+
+            if(err){
+
+                console.log(err);
+
+                res.send(err);
+
+            }else{
+
+                res.send({
+
+                    success: true,
+                    message: "Đặt hàng thành công"
+
+                });
+
+            }
+
+        }
+
+    );
+
+});
+
+/* ====================================
+   GET ORDERS
+==================================== */
+
+app.get("/orders", (req, res) => {
+
+    const sql = `
+    
+        SELECT * FROM orders
+        ORDER BY id DESC
+
+    `;
+
+    db.query(sql, (err, result) => {
+
+        if(err){
+
+            console.log(err);
+
+            res.send(err);
+
+        }else{
+
+            res.send(result);
+
+        }
+
+    });
+
+});
+
+/* ====================================
+   SERVER
+==================================== */
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-    console.log("Server started");
+    console.log("🚀 Server started");
 
 });
