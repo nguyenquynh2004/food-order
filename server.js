@@ -1,21 +1,11 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
-const path = require("path");
 
 const app = express();
 
-// =========================
-// MIDDLEWARE
-// =========================
-
 app.use(cors());
 app.use(express.json());
-
-app.use(
-    "/uploads",
-    express.static(path.join(__dirname, "uploads"))
-);
 
 // =========================
 // MYSQL CONNECTION
@@ -41,7 +31,7 @@ const db = mysql.createPool({
 
 });
 
-// TEST MYSQL CONNECTION
+// TEST MYSQL
 
 db.getConnection((err, connection) => {
 
@@ -66,12 +56,12 @@ db.getConnection((err, connection) => {
 
 app.get("/", (req, res) => {
 
-    res.send("🚀 Server running...");
+    res.send("🚀 Server running");
 
 });
 
 // =========================
-// GET ALL FOODS
+// GET FOODS
 // =========================
 
 app.get("/foods", (req, res) => {
@@ -81,8 +71,6 @@ app.get("/foods", (req, res) => {
     db.query(sql, (err, result) => {
 
         if (err) {
-
-            console.log(err);
 
             res.send(err);
 
@@ -137,8 +125,6 @@ app.post("/foods", (req, res) => {
 
             if (err) {
 
-                console.log(err);
-
                 res.send(err);
 
             } else {
@@ -155,265 +141,6 @@ app.post("/foods", (req, res) => {
         }
 
     );
-
-});
-
-// =========================
-// UPDATE FOOD
-// =========================
-
-app.put("/foods/:id", (req, res) => {
-
-    const id = req.params.id;
-
-    const {
-
-        name,
-        price,
-        image,
-        description
-
-    } = req.body;
-
-    const sql = `
-
-        UPDATE foods
-
-        SET
-
-            name = ?,
-            price = ?,
-            image = ?,
-            description = ?
-
-        WHERE id = ?
-
-    `;
-
-    db.query(
-
-        sql,
-
-        [
-
-            name,
-            price,
-            image,
-            description,
-            id
-
-        ],
-
-        (err, result) => {
-
-            if (err) {
-
-                console.log(err);
-
-                res.send(err);
-
-            } else {
-
-                res.send({
-
-                    success: true,
-                    message: "✅ Cập nhật món ăn thành công"
-
-                });
-
-            }
-
-        }
-
-    );
-
-});
-
-// =========================
-// DELETE FOOD
-// =========================
-
-app.delete("/foods/:id", (req, res) => {
-
-    const id = req.params.id;
-
-    const sql = "DELETE FROM foods WHERE id = ?";
-
-    db.query(sql, [id], (err, result) => {
-
-        if (err) {
-
-            console.log(err);
-
-            res.send(err);
-
-        } else {
-
-            res.send({
-
-                success: true,
-                message: "✅ Xóa món ăn thành công"
-
-            });
-
-        }
-
-    });
-
-});
-
-// =========================
-// LOGIN ADMIN
-// =========================
-
-app.post("/login", (req, res) => {
-
-    const {
-
-        username,
-        password
-
-    } = req.body;
-
-    const sql = `
-
-        SELECT * FROM users
-
-        WHERE username = ?
-        AND password = ?
-
-    `;
-
-    db.query(
-
-        sql,
-
-        [
-
-            username,
-            password
-
-        ],
-
-        (err, result) => {
-
-            if (err) {
-
-                console.log(err);
-
-                res.send(err);
-
-            } else {
-
-                if (result.length > 0) {
-
-                    res.send({
-
-                        success: true,
-                        message: "✅ Đăng nhập thành công"
-
-                    });
-
-                } else {
-
-                    res.send({
-
-                        success: false,
-                        message: "❌ Sai tài khoản hoặc mật khẩu"
-
-                    });
-
-                }
-
-            }
-
-        }
-
-    );
-
-});
-
-// =========================
-// CREATE ORDER
-// =========================
-
-app.post("/orders", (req, res) => {
-
-    const {
-
-        customer_name,
-        total_price
-
-    } = req.body;
-
-    const sql = `
-
-        INSERT INTO orders
-        (customer_name, total_price)
-
-        VALUES (?, ?)
-
-    `;
-
-    db.query(
-
-        sql,
-
-        [
-
-            customer_name,
-            total_price
-
-        ],
-
-        (err, result) => {
-
-            if (err) {
-
-                console.log(err);
-
-                res.send(err);
-
-            } else {
-
-                res.send({
-
-                    success: true,
-                    message: "✅ Đặt hàng thành công"
-
-                });
-
-            }
-
-        }
-
-    );
-
-});
-
-// =========================
-// GET ORDERS
-// =========================
-
-app.get("/orders", (req, res) => {
-
-    const sql = "SELECT * FROM orders ORDER BY id DESC";
-
-    db.query(sql, (err, result) => {
-
-        if (err) {
-
-            console.log(err);
-
-            res.send(err);
-
-        } else {
-
-            res.send(result);
-
-        }
-
-    });
 
 });
 
